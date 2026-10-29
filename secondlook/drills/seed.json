@@ -1,0 +1,175 @@
+[
+  {
+    "id": "invented-01",
+    "bug_type": "invented package or function",
+    "task": "Return the average (mean) of a list of numbers.",
+    "code": "import math\n\n\ndef average(numbers):\n    \"\"\"Return the mean of a list of numbers.\"\"\"\n    return math.mean(numbers)\n",
+    "bug_lines": [
+      6
+    ],
+    "fixed": "import statistics\n\n\ndef average(numbers):\n    \"\"\"Return the mean of a list of numbers.\"\"\"\n    return statistics.mean(numbers)\n",
+    "test": "from solution import average\n\n\ndef test_average_of_three_numbers():\n    assert average([2, 4, 6]) == 4\n\n\ndef test_average_of_one_number():\n    assert average([5]) == 5\n",
+    "explanation": "The `math` module has no `mean` function, so this crashes with AttributeError the first time it runs. The real one is `statistics.mean`. AI often mixes up which module a function lives in."
+  },
+  {
+    "id": "invented-02",
+    "bug_type": "invented package or function",
+    "task": "Return how similar two strings are, as a number from 0.0 (nothing alike) to 1.0 (identical). Ignore upper and lower case.",
+    "code": "from textsimilarity_pro import ratio\n\n\ndef similarity(a, b):\n    \"\"\"Return a similarity score between 0.0 and 1.0.\"\"\"\n    return ratio(a.lower(), b.lower())\n",
+    "bug_lines": [
+      1
+    ],
+    "fixed": "from difflib import SequenceMatcher\n\n\ndef similarity(a, b):\n    \"\"\"Return a similarity score between 0.0 and 1.0.\"\"\"\n    return SequenceMatcher(None, a.lower(), b.lower()).ratio()\n",
+    "test": "from solution import similarity\n\n\ndef test_identical_strings_score_one():\n    assert similarity(\"hello\", \"hello\") == 1.0\n\n\ndef test_ignores_case():\n    assert similarity(\"Hello\", \"hello\") == 1.0\n\n\ndef test_different_strings_score_low():\n    assert similarity(\"apple\", \"zzzzz\") < 0.5\n",
+    "explanation": "There is no package called `textsimilarity_pro` on PyPI: the AI made it up, so the import fails. Python's built-in `difflib.SequenceMatcher` does this job. Attackers register made-up names like this to spread malware, so never `pip install` a package you can't find documented."
+  },
+  {
+    "id": "outdated-01",
+    "bug_type": "outdated API",
+    "task": "Measure how many seconds a function takes to run.",
+    "code": "import time\n\n\ndef time_it(func):\n    \"\"\"Run func and return how long it took in seconds.\"\"\"\n    start = time.clock()\n    func()\n    end = time.clock()\n    return end - start\n",
+    "bug_lines": [
+      6,
+      8
+    ],
+    "fixed": "import time\n\n\ndef time_it(func):\n    \"\"\"Run func and return how long it took in seconds.\"\"\"\n    start = time.perf_counter()\n    func()\n    end = time.perf_counter()\n    return end - start\n",
+    "test": "from solution import time_it\n\n\ndef test_returns_small_non_negative_number():\n    elapsed = time_it(lambda: sum(range(1000)))\n    assert 0 <= elapsed < 1\n",
+    "explanation": "`time.clock()` was removed in Python 3.8, so this crashes on any modern Python. Use `time.perf_counter()` for timing. AI learned from old tutorials and still suggests removed functions."
+  },
+  {
+    "id": "outdated-02",
+    "bug_type": "outdated API",
+    "task": "Flatten a nested dictionary so {'a': {'b': 1}} becomes {'a.b': 1}.",
+    "code": "import collections\n\n\ndef flatten(data, prefix=\"\"):\n    \"\"\"Flatten nested dicts into one level with dotted keys.\"\"\"\n    flat = {}\n    for key, value in data.items():\n        full_key = prefix + key\n        if isinstance(value, collections.Mapping):\n            flat.update(flatten(value, full_key + \".\"))\n        else:\n            flat[full_key] = value\n    return flat\n",
+    "bug_lines": [
+      9
+    ],
+    "fixed": "import collections.abc\n\n\ndef flatten(data, prefix=\"\"):\n    \"\"\"Flatten nested dicts into one level with dotted keys.\"\"\"\n    flat = {}\n    for key, value in data.items():\n        full_key = prefix + key\n        if isinstance(value, collections.abc.Mapping):\n            flat.update(flatten(value, full_key + \".\"))\n        else:\n            flat[full_key] = value\n    return flat\n",
+    "test": "from solution import flatten\n\n\ndef test_flattens_one_level():\n    assert flatten({\"a\": {\"b\": 1}, \"c\": 2}) == {\"a.b\": 1, \"c\": 2}\n\n\ndef test_flat_dict_unchanged():\n    assert flatten({\"x\": 1}) == {\"x\": 1}\n",
+    "explanation": "`collections.Mapping` moved to `collections.abc.Mapping`, and the old name was removed in Python 3.10, so this line crashes. Old answers online still use the old name, and AI copies them."
+  },
+  {
+    "id": "edge-01",
+    "bug_type": "missing edge case",
+    "task": "Return the average of a list of exam scores. Return 0.0 if the list is empty.",
+    "code": "def average_score(scores):\n    \"\"\"Return the average score.\"\"\"\n    total = sum(scores)\n    return total / len(scores)\n",
+    "bug_lines": [
+      4
+    ],
+    "fixed": "def average_score(scores):\n    \"\"\"Return the average score.\"\"\"\n    if not scores:\n        return 0.0\n    total = sum(scores)\n    return total / len(scores)\n",
+    "test": "from solution import average_score\n\n\ndef test_normal_scores():\n    assert average_score([80, 90, 100]) == 90\n\n\ndef test_empty_list_returns_zero():\n    assert average_score([]) == 0.0\n",
+    "explanation": "With an empty list, `len(scores)` is 0 and dividing by zero crashes. The task said to return 0.0, so check `if not scores: return 0.0` first. AI code is often written for the happy path only."
+  },
+  {
+    "id": "edge-02",
+    "bug_type": "missing edge case",
+    "task": "Return the most common word in a piece of text, or None if the text has no words.",
+    "code": "from collections import Counter\n\n\ndef most_common_word(text):\n    \"\"\"Return the word that appears most often.\"\"\"\n    words = text.lower().split()\n    return Counter(words).most_common(1)[0][0]\n",
+    "bug_lines": [
+      7
+    ],
+    "fixed": "from collections import Counter\n\n\ndef most_common_word(text):\n    \"\"\"Return the word that appears most often.\"\"\"\n    words = text.lower().split()\n    if not words:\n        return None\n    return Counter(words).most_common(1)[0][0]\n",
+    "test": "from solution import most_common_word\n\n\ndef test_finds_most_common():\n    assert most_common_word(\"the cat and the dog\") == \"the\"\n\n\ndef test_empty_text_returns_none():\n    assert most_common_word(\"\") is None\n\n\ndef test_only_spaces_returns_none():\n    assert most_common_word(\"   \") is None\n",
+    "explanation": "For empty text, `most_common(1)` gives an empty list, and `[0]` on an empty list raises IndexError. Check for no words first and return None, as the task asked."
+  },
+  {
+    "id": "offbyone-01",
+    "bug_type": "off-by-one",
+    "task": "Return one page of results. Pages are numbered from 1, so page 1 is the first `size` items.",
+    "code": "def get_page(items, page, size=10):\n    \"\"\"Return the items on the given page.\"\"\"\n    start = page * size\n    return items[start:start + size]\n",
+    "bug_lines": [
+      3
+    ],
+    "fixed": "def get_page(items, page, size=10):\n    \"\"\"Return the items on the given page.\"\"\"\n    start = (page - 1) * size\n    return items[start:start + size]\n",
+    "test": "from solution import get_page\n\n\ndef test_first_page():\n    assert get_page(list(range(25)), 1, 10) == list(range(10))\n\n\ndef test_last_partial_page():\n    assert get_page(list(range(25)), 3, 10) == [20, 21, 22, 23, 24]\n",
+    "explanation": "Pages start at 1 but list positions start at 0, so page 1 must start at position 0. `page * size` skips the whole first page. The fix is `(page - 1) * size`."
+  },
+  {
+    "id": "offbyone-02",
+    "bug_type": "off-by-one",
+    "task": "Count the days in a holiday, counting both the first and the last day. A holiday from 1 Dec to 3 Dec is 3 days.",
+    "code": "from datetime import date\n\n\ndef holiday_length(start: date, end: date) -> int:\n    \"\"\"Return the number of days in the holiday.\"\"\"\n    return (end - start).days\n",
+    "bug_lines": [
+      6
+    ],
+    "fixed": "from datetime import date\n\n\ndef holiday_length(start: date, end: date) -> int:\n    \"\"\"Return the number of days in the holiday.\"\"\"\n    return (end - start).days + 1\n",
+    "test": "from datetime import date\n\nfrom solution import holiday_length\n\n\ndef test_three_day_holiday():\n    assert holiday_length(date(2026, 12, 1), date(2026, 12, 3)) == 3\n\n\ndef test_one_day_holiday():\n    assert holiday_length(date(2026, 12, 25), date(2026, 12, 25)) == 1\n",
+    "explanation": "Subtracting dates counts the gaps between days, not the days: 1 Dec to 3 Dec gives 2. Because both ends count, add 1."
+  },
+  {
+    "id": "insecure-01",
+    "bug_type": "insecure default",
+    "task": "Look up users by name in a SQLite database. Names can contain apostrophes, like O'Brien.",
+    "code": "import sqlite3\n\n\ndef find_users(conn: sqlite3.Connection, name: str):\n    \"\"\"Return (id, name) rows for users with this name.\"\"\"\n    query = f\"SELECT id, name FROM users WHERE name = '{name}'\"\n    return conn.execute(query).fetchall()\n",
+    "bug_lines": [
+      6,
+      7
+    ],
+    "fixed": "import sqlite3\n\n\ndef find_users(conn: sqlite3.Connection, name: str):\n    \"\"\"Return (id, name) rows for users with this name.\"\"\"\n    query = \"SELECT id, name FROM users WHERE name = ?\"\n    return conn.execute(query, (name,)).fetchall()\n",
+    "test": "import sqlite3\n\nimport pytest\n\nfrom solution import find_users\n\n\n@pytest.fixture\ndef conn():\n    c = sqlite3.connect(\":memory:\")\n    c.execute(\"CREATE TABLE users (id INTEGER, name TEXT)\")\n    c.executemany(\"INSERT INTO users VALUES (?, ?)\", [(1, \"alice\"), (2, \"bob\"), (3, \"O'Brien\")])\n    return c\n\n\ndef test_finds_one_user(conn):\n    assert find_users(conn, \"alice\") == [(1, \"alice\")]\n\n\ndef test_name_with_apostrophe(conn):\n    assert find_users(conn, \"O'Brien\") == [(3, \"O'Brien\")]\n\n\ndef test_injection_returns_nothing(conn):\n    assert find_users(conn, \"' OR '1'='1\") == []\n",
+    "explanation": "Pasting the name straight into the SQL text lets the input rewrite the query: `' OR '1'='1` returns every user (SQL injection), and a name like O'Brien breaks it. Pass values separately with a `?` placeholder."
+  },
+  {
+    "id": "insecure-02",
+    "bug_type": "insecure default",
+    "task": "Work out a simple sum a user types, like '2 + 3 * 4'. Anything that isn't plain arithmetic must raise ValueError.",
+    "code": "def calculate(expression: str) -> float:\n    \"\"\"Evaluate an arithmetic expression typed by the user.\"\"\"\n    return eval(expression)\n",
+    "bug_lines": [
+      3
+    ],
+    "fixed": "import ast\nimport operator\n\nOPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv}\n\n\ndef calculate(expression: str) -> float:\n    \"\"\"Evaluate an arithmetic expression typed by the user.\"\"\"\n    def walk(node):\n        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):\n            return node.value\n        if isinstance(node, ast.BinOp) and type(node.op) in OPS:\n            return OPS[type(node.op)](walk(node.left), walk(node.right))\n        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):\n            return -walk(node.operand)\n        raise ValueError(\"Only numbers and + - * / are allowed\")\n\n    try:\n        tree = ast.parse(expression, mode=\"eval\")\n    except SyntaxError as e:\n        raise ValueError(\"Not a valid sum\") from e\n    return walk(tree.body)\n",
+    "test": "import pytest\n\nfrom solution import calculate\n\n\ndef test_simple_sum():\n    assert calculate(\"2 + 3 * 4\") == 14\n\n\ndef test_rejects_code():\n    with pytest.raises(ValueError):\n        calculate(\"__import__('os').getcwd()\")\n",
+    "explanation": "`eval` runs any Python the user types, not just sums, so someone could type code that deletes files. Parse the input and allow only numbers and + - * /."
+  },
+  {
+    "id": "swallowed-01",
+    "bug_type": "swallowed error",
+    "task": "Load settings from a JSON file. If the file doesn't exist, return {}. If the file is broken, raise an error so the user knows.",
+    "code": "import json\n\n\ndef load_settings(path):\n    \"\"\"Load settings from a JSON file.\"\"\"\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except Exception:\n        return {}\n",
+    "bug_lines": [
+      9
+    ],
+    "fixed": "import json\n\n\ndef load_settings(path):\n    \"\"\"Load settings from a JSON file.\"\"\"\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return {}\n",
+    "test": "import json\n\nimport pytest\n\nfrom solution import load_settings\n\n\ndef test_reads_valid_file(tmp_path):\n    p = tmp_path / \"settings.json\"\n    p.write_text('{\"theme\": \"dark\"}')\n    assert load_settings(p) == {\"theme\": \"dark\"}\n\n\ndef test_missing_file_returns_empty(tmp_path):\n    assert load_settings(tmp_path / \"nope.json\") == {}\n\n\ndef test_broken_file_raises(tmp_path):\n    p = tmp_path / \"settings.json\"\n    p.write_text('{\"theme\": ')\n    with pytest.raises(json.JSONDecodeError):\n        load_settings(p)\n",
+    "explanation": "`except Exception` catches every error, including a broken file, and quietly returns {}, so the user's settings vanish with no warning. Catch only the error you expect: `FileNotFoundError`."
+  },
+  {
+    "id": "swallowed-02",
+    "bug_type": "swallowed error",
+    "task": "Turn a list of ages typed into a form (as text) into whole numbers. If any entry isn't a number, raise ValueError.",
+    "code": "def parse_ages(entries):\n    \"\"\"Convert age strings like '21' to ints.\"\"\"\n    ages = []\n    for entry in entries:\n        try:\n            ages.append(int(entry))\n        except:\n            pass\n    return ages\n",
+    "bug_lines": [
+      5,
+      7,
+      8
+    ],
+    "fixed": "def parse_ages(entries):\n    \"\"\"Convert age strings like '21' to ints.\"\"\"\n    ages = []\n    for entry in entries:\n        ages.append(int(entry))\n    return ages\n",
+    "test": "import pytest\n\nfrom solution import parse_ages\n\n\ndef test_valid_ages():\n    assert parse_ages([\"21\", \" 34 \"]) == [21, 34]\n\n\ndef test_bad_entry_raises():\n    with pytest.raises(ValueError):\n        parse_ages([\"21\", \"twenty\"])\n",
+    "explanation": "`except: pass` hides every error, so 'twenty' just disappears and the list silently comes back shorter. Let the ValueError happen, or handle it on purpose."
+  },
+  {
+    "id": "input-01",
+    "bug_type": "wrong input assumption",
+    "task": "Add up the 'amount' column of a CSV file. The first line of the file is a header: id,amount.",
+    "code": "def total_amount(path):\n    \"\"\"Return the sum of the amount column.\"\"\"\n    total = 0.0\n    with open(path) as f:\n        for line in f:\n            total += float(line.split(\",\")[1])\n    return total\n",
+    "bug_lines": [
+      5,
+      6
+    ],
+    "fixed": "import csv\n\n\ndef total_amount(path):\n    \"\"\"Return the sum of the amount column.\"\"\"\n    total = 0.0\n    with open(path, newline=\"\") as f:\n        for row in csv.DictReader(f):\n            total += float(row[\"amount\"])\n    return total\n",
+    "test": "from solution import total_amount\n\n\ndef test_sums_amounts(tmp_path):\n    p = tmp_path / \"orders.csv\"\n    p.write_text(\"id,amount\\n1,10.5\\n2,4.5\\n\")\n    assert total_amount(p) == 15.0\n\n\ndef test_header_only_is_zero(tmp_path):\n    p = tmp_path / \"orders.csv\"\n    p.write_text(\"id,amount\\n\")\n    assert total_amount(p) == 0.0\n",
+    "explanation": "The loop treats the header line as data, so `float('amount')` crashes: the AI assumed the file had no header. `csv.DictReader` skips the header and lets you use column names."
+  },
+  {
+    "id": "input-02",
+    "bug_type": "wrong input assumption",
+    "task": "Turn a date typed as day/month/year, like '25/12/2026', into a date object.",
+    "code": "from datetime import datetime\n\n\ndef parse_date(text):\n    \"\"\"Parse a date string into a date.\"\"\"\n    return datetime.strptime(text, \"%m/%d/%Y\").date()\n",
+    "bug_lines": [
+      6
+    ],
+    "fixed": "from datetime import datetime\n\n\ndef parse_date(text):\n    \"\"\"Parse a date string into a date.\"\"\"\n    return datetime.strptime(text, \"%d/%m/%Y\").date()\n",
+    "test": "from datetime import date\n\nfrom solution import parse_date\n\n\ndef test_christmas():\n    assert parse_date(\"25/12/2026\") == date(2026, 12, 25)\n\n\ndef test_day_before_month():\n    assert parse_date(\"03/04/2026\") == date(2026, 4, 3)\n",
+    "explanation": "`%m/%d/%Y` is the American month/day order, so '25/12/2026' fails (there is no month 25) and '03/04/2026' becomes 4 March. The task said day/month/year, so use `%d/%m/%Y`. Many chatbots default to US formats."
+  }
+]

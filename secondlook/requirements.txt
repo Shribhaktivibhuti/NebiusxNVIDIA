@@ -1,0 +1,7 @@
+openai>=1.40
+streamlit>=1.38
+requests>=2.31
+tavily-python>=0.5
+pytest>=8.0
+e2b>=2.0
+python-dotenv>=1.0

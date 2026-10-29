@@ -1,0 +1,9 @@
+# Drill generator image, for running as a Nebius Serverless Job (see README, "Practice drill").
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY secondlook ./secondlook
+COPY drills ./drills
+ENTRYPOINT ["python", "-m", "secondlook.drill_generator"]
+CMD ["--count", "50"]
